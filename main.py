@@ -38,16 +38,17 @@ class MainWindow(Gtk.Window):
         self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
 
         self.routesLabel = Gtk.Label(label="Select route:")
-
         self.route_dropdown = Gtk.ComboBoxText()
         self.route_dropdown.set_entry_text_column(0)
         self.route_dropdown.connect("changed", self.on_route_selected)
 
+        self.stopsLabel = Gtk.Label(label="Select one of the stops along the route:")
         self.stop_dropdown = Gtk.ComboBoxText()
-        self.stop_dropdown.set_entry_text_column(0)
+        self.stop_dropdown.connect("changed", self.on_stop_selected)
         
         self.main_box.add(self.routesLabel)
         self.main_box.add(self.route_dropdown)
+        self.main_box.add(self.stopsLabel)
         self.main_box.add(self.stop_dropdown)
         self.add(self.main_box)
 
@@ -55,21 +56,38 @@ class MainWindow(Gtk.Window):
         getRoutes()
     
     def on_route_selected(self, combo):
+        self.stop_dropdown.remove_all()
+        self.stop_data = []
+
         index = combo.get_active()
         if index == -1:
             return
         
-        selected_route = self.routes_data[index]
-        route_number = selected_route["route"]
+        self.selected_route = self.routes_data[index]
+        route_number = self.selected_route["route"]
 
         print(f"selected route: {route_number}")
         
-        for direction in selected_route["dir"]:
+        for direction in self.selected_route["dir"]:
             direction_name = direction["desc"]
 
             for stop in direction["stop"]:
                 stop_text = f"{direction_name} - {stop['desc']}"
                 self.stop_dropdown.append_text(stop_text)
+                self.stop_data.append(stop)
+
+    def on_stop_selected(self, combo):
+        index = combo.get_active()
+        if index == -1:
+            return
+        
+        selected_stop = self.stop_data[index]
+        locid = selected_stop["locid"]
+        print(f"selected stop locid: {locid}")
+
+        self.stopsUrl = f"https://developer.trimet.org/ws/v2/arrivals?appID={appID}&LocIDs={locid}&json=true"
+        self.stopsResponse = requests.get(self.stopsUrl).json()
+        print(self.stopsResponse)
 
 win = MainWindow()
 win.connect("destroy", Gtk.main_quit)
