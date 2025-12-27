@@ -106,7 +106,9 @@ class MainWindow(Gtk.Window):
                 arrival_time = arrival["scheduled"]
             minutes = (arrival_time - current_time) // (1000 * 60)
 
-            arrival_info = f"{short_sign} - {minutes} min"
+            load_percent = arrival["loadPercentage"]
+
+            arrival_info = f"{short_sign} - {minutes} min {load_percent}% full"
             print(arrival_info)
 
             self.arrival_info += arrival_info + "\n"
