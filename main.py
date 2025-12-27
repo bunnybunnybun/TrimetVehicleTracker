@@ -45,13 +45,17 @@ class MainWindow(Gtk.Window):
         self.stopsLabel = Gtk.Label(label="Select one of the stops along the route:")
         self.stop_dropdown = Gtk.ComboBoxText()
         self.stop_dropdown.connect("changed", self.on_stop_selected)
+
+        self.arrivals_explanation_label = Gtk.Label(label="Arrivals:")
+        self.arrivals_label = Gtk.Label()
         
         self.main_box.add(self.routesLabel)
         self.main_box.add(self.route_dropdown)
         self.main_box.add(self.stopsLabel)
         self.main_box.add(self.stop_dropdown)
+        self.main_box.add(self.arrivals_explanation_label)
+        self.main_box.add(self.arrivals_label)
         self.add(self.main_box)
-
 
         getRoutes()
     
@@ -85,9 +89,29 @@ class MainWindow(Gtk.Window):
         locid = selected_stop["locid"]
         print(f"selected stop locid: {locid}")
 
-        self.stopsUrl = f"https://developer.trimet.org/ws/v2/arrivals?appID={appID}&LocIDs={locid}&json=true"
-        self.stopsResponse = requests.get(self.stopsUrl).json()
-        print(self.stopsResponse)
+        self.arrivalsUrl = f"https://developer.trimet.org/ws/v2/arrivals?appID={appID}&LocIDs={locid}&json=true"
+        self.arrivalsResponse = requests.get(self.arrivalsUrl).json()
+
+        arrivals = self.arrivalsResponse["resultSet"]["arrival"]
+        self.arrival_info = ""
+
+        for arrival in arrivals:
+            route = arrival["route"]
+            short_sign = arrival["shortSign"]
+
+            current_time = self.arrivalsResponse["resultSet"]["queryTime"]
+            if arrival.get("status") == "estimated" and "estimated" in arrival:
+                arrival_time = arrival["estimated"]
+            else:
+                arrival_time = arrival["scheduled"]
+            minutes = (arrival_time - current_time) // (1000 * 60)
+
+            arrival_info = f"{short_sign} - {minutes} min"
+            print(arrival_info)
+
+            self.arrival_info += arrival_info + "\n"
+        
+        self.arrivals_label.set_text(self.arrival_info)
 
 win = MainWindow()
 win.connect("destroy", Gtk.main_quit)
